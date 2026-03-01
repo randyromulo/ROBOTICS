@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<title>UNIT-7X — Omniscient Robot AI</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--c:#00f5ff;--o:#ff6b35;--g:#00ff88;--r:#ff2266;--y:#ffdd00;--dark:#020b14;--panel:rgba(2,15,30,0.94);--border:rgba(0,245,255,0.18);--b2:rgba(0,245,255,0.07);}
+html,body{width:100%;height:100%;overflow:hidden;}
+body{background:var(--dark);color:#e0f7ff;font-family:'Share Tech Mono',monospace;display:flex;flex-direction:column;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,245,255,0.022) 1px,transparent 1px),linear-gradient(90deg,rgba(0,245,255,0.022) 1px,transparent 1px);background-size:38px 38px;pointer-events:none;z-index:0;}
+header{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:.5rem .9rem;border-bottom:1px solid var(--border);flex-shrink:0;background:rgba(2,11,20,0.97);gap:.5rem;}
+.logo{font-family:'Orbitron',sans-serif;font-weight:900;font-size:clamp(.8rem,2.2vw,1.2rem);letter-spacing:.1em;background:linear-gradient(135deg,var(--c),#fff 50%,var(--o));-webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap;}
+.hstats{display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;}
+.hstat{font-size:.56rem;color:rgba(0,245,255,.5);letter-spacing:.06em;display:flex;align-items:center;gap:3px;white-space:nowrap;}
+.dot{width:6px;height:6px;border-radius:50%;display:inline-block;animation:blink 1.5s infinite;flex-shrink:0;}
+.dot.g{background:var(--g);box-shadow:0 0 5px var(--g);}
+.dot.o{background:var(--o);box-shadow:0 0 5px var(--o);animation-delay:.5s;}
+.dot.r{background:var(--r);box-shadow:0 0 5px var(--r);animation-delay:1s;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+/* KEY INPUT */
+.key-row{display:flex;gap:.35rem;align-items:center;}
+#apiKey{background:rgba(0,10,20,.9);border:1px solid rgba(0,245,255,.22);color:#e0f7ff;font-family:'Share Tech Mono',monospace;font-size:.58rem;padding:.28rem .52rem;border-radius:4px;outline:none;width:clamp(130px,16vw,210px);transition:border-color .2s;}
+#apiKey:focus{border-color:var(--c);}
+#apiKey::placeholder{color:rgba(0,245,255,.25);font-size:.52rem;}
+#connectBtn{background:rgba(0,245,255,.1);border:1px solid var(--border);color:var(--c);font-family:'Share Tech Mono',monospace;font-size:.56rem;padding:.28rem .52rem;border-radius:4px;cursor:pointer;transition:all .14s;white-space:nowrap;}
+#connectBtn:hover{background:rgba(0,245,255,.22);border-color:var(--c);}
+#connectBtn.ok{color:var(--g);border-color:rgba(0,255,136,.4);background:rgba(0,255,136,.08);}
+#keyStatus{font-size:.56rem;}
+
+.app{position:relative;z-index:5;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr auto;gap:.5rem;padding:.5rem;flex:1;overflow:hidden;min-height:0;}
+@media(max-width:680px){.app{grid-template-columns:1fr;grid-template-rows:240px 190px auto;}}
+
+.robot-panel{position:relative;background:radial-gradient(ellipse at 50% 55%,rgba(0,60,100,.45) 0%,#010810 70%);border:1px solid var(--border);border-radius:8px;overflow:hidden;display:flex;flex-direction:column;min-height:0;}
+#robotCanvas{width:100%;flex:1;display:block;cursor:grab;min-height:0;}
+.scanlines{position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.04) 2px,rgba(0,0,0,.04) 4px);pointer-events:none;border-radius:8px;}
+#speechBubble{position:absolute;top:7px;left:50%;transform:translateX(-50%);background:rgba(0,12,28,.97);border:1.5px solid var(--c);border-radius:10px;padding:.48rem .85rem;font-size:.7rem;color:var(--c);max-width:90%;text-align:center;z-index:20;box-shadow:0 0 24px rgba(0,245,255,.25);display:none;animation:bpop .22s ease;line-height:1.55;}
+#speechBubble::after{content:'';position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);border:8px solid transparent;border-top-color:var(--c);border-bottom:none;}
+@keyframes bpop{from{opacity:0;transform:translateX(-50%) scale(.82)}to{opacity:1;transform:translateX(-50%) scale(1)}}
+.robot-controls{display:flex;gap:.28rem;padding:.42rem;flex-wrap:wrap;border-top:1px solid var(--b2);background:rgba(0,8,18,.7);flex-shrink:0;}
+.rbtn{background:rgba(0,245,255,.05);border:1px solid var(--border);color:var(--c);font-family:'Share Tech Mono',monospace;font-size:.58rem;padding:.28rem .4rem;border-radius:4px;cursor:pointer;transition:all .12s;flex:1;min-width:42px;text-align:center;}
+.rbtn:hover,.rbtn:active{background:rgba(0,245,255,.16);border-color:var(--c);}
+.rbtn.o{color:var(--o);border-color:rgba(255,107,53,.2);}
+.rbtn.o:hover{background:rgba(255,107,53,.14);border-color:var(--o);}
+
+.cam-panel{position:relative;border:1px solid var(--border);border-radius:8px;overflow:hidden;display:flex;flex-direction:column;background:#000;min-height:0;}
+.cam-header{padding:.38rem .62rem;background:rgba(0,12,28,.94);border-bottom:1px solid var(--b2);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.cam-title{font-family:'Orbitron',sans-serif;font-size:.56rem;letter-spacing:.16em;color:var(--c);}
+.cam-btns{display:flex;gap:.3rem;}
+.cbtn{background:rgba(0,245,255,.07);border:1px solid var(--border);color:var(--c);font-family:'Share Tech Mono',monospace;font-size:.56rem;padding:.22rem .5rem;border-radius:4px;cursor:pointer;transition:all .13s;}
+.cbtn:hover{background:rgba(0,245,255,.18);border-color:var(--c);}
+.cbtn.active{background:rgba(255,38,102,.12);color:var(--r);border-color:var(--r);}
+.cbtn.busy{background:rgba(255,221,0,.1);color:var(--y);border-color:var(--y);animation:yp .6s infinite;}
+@keyframes yp{0%,100%{box-shadow:0 0 4px rgba(255,221,0,.2)}50%{box-shadow:0 0 12px rgba(255,221,0,.6)}}
+.cam-view{position:relative;flex:1;overflow:hidden;min-height:0;}
+#camVideo{width:100%;height:100%;object-fit:cover;display:block;}
+#camCanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+.cam-off{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;background:rgba(0,4,12,.97);color:rgba(0,245,255,.35);font-size:.7rem;text-align:center;padding:1rem;}
+#visionBox{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,8,20,.95));padding:.5rem .65rem .45rem;font-size:.63rem;color:var(--g);line-height:1.55;min-height:2.2rem;max-height:4rem;overflow:hidden;}
+.scan-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--c),transparent);animation:scanmv 2.8s linear infinite;pointer-events:none;opacity:.6;display:none;}
+@keyframes scanmv{0%{top:-2px}100%{top:100%}}
+.corner{position:absolute;width:15px;height:15px;border-color:var(--c);border-style:solid;opacity:.55;}
+.corner.tl{top:5px;left:5px;border-width:2px 0 0 2px;}
+.corner.tr{top:5px;right:5px;border-width:2px 2px 0 0;}
+.corner.bl{bottom:5px;left:5px;border-width:0 0 2px 2px;}
+.corner.br{bottom:5px;right:5px;border-width:0 2px 2px 0;}
+
+.chat-panel{grid-column:1/-1;background:var(--panel);border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column;overflow:hidden;max-height:210px;flex-shrink:0;}
+.qprompts{display:flex;gap:.28rem;padding:.32rem .5rem 0;flex-wrap:wrap;flex-shrink:0;}
+.qp{background:rgba(0,245,255,.04);border:1px solid rgba(0,245,255,.12);color:rgba(0,245,255,.6);font-family:'Share Tech Mono',monospace;font-size:.56rem;padding:.22rem .45rem;border-radius:20px;cursor:pointer;transition:all .12s;white-space:nowrap;}
+.qp:hover{background:rgba(0,245,255,.13);border-color:var(--c);color:var(--c);}
+.chat-msgs{flex:1;overflow-y:auto;padding:.45rem .6rem;display:flex;flex-direction:column;gap:.35rem;scrollbar-width:thin;scrollbar-color:var(--c) transparent;}
+.msg{padding:.35rem .58rem;border-radius:6px;font-size:.68rem;line-height:1.58;animation:mfade .2s ease;max-width:93%;}
+@keyframes mfade{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
+.msg.user{background:rgba(0,245,255,.07);border:1px solid rgba(0,245,255,.15);color:rgba(224,247,255,.92);align-self:flex-end;border-radius:6px 6px 0 6px;}
+.msg.bot{background:rgba(255,107,53,.07);border:1px solid rgba(255,107,53,.14);color:rgba(255,212,182,.96);align-self:flex-start;border-radius:6px 6px 6px 0;}
+.msg.bot b{color:var(--o);font-size:.55rem;display:block;margin-bottom:.1rem;letter-spacing:.08em;}
+.msg.sys{background:rgba(0,255,136,.04);border:1px solid rgba(0,255,136,.1);color:rgba(0,255,136,.6);font-size:.58rem;align-self:center;text-align:center;border-radius:20px;padding:.22rem .7rem;}
+.msg.vision{background:rgba(0,245,255,.05);border:1px solid rgba(0,245,255,.18);color:rgba(180,240,255,.9);align-self:flex-start;border-radius:6px 6px 6px 0;}
+.msg.vision b{color:var(--c);font-size:.55rem;display:block;margin-bottom:.1rem;}
+.typing span{display:inline-block;width:4px;height:4px;background:var(--o);border-radius:50%;margin:0 1px;animation:tb 1s infinite;}
+.typing span:nth-child(2){animation-delay:.2s}.typing span:nth-child(3){animation-delay:.4s}
+@keyframes tb{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+.chat-input-row{display:flex;gap:.3rem;padding:.38rem .5rem;border-top:1px solid var(--b2);background:rgba(0,8,18,.7);flex-shrink:0;align-items:center;}
+#chatInput{flex:1;background:rgba(0,8,20,.88);border:1px solid var(--border);color:#e0f7ff;font-family:'Share Tech Mono',monospace;font-size:.68rem;padding:.38rem .55rem;border-radius:4px;outline:none;transition:border-color .2s;min-width:0;}
+#chatInput:focus{border-color:var(--c);}
+#chatInput::placeholder{color:rgba(0,245,255,.25);}
+.ibtn{background:rgba(0,245,255,.07);border:1px solid var(--border);color:var(--c);font-family:'Share Tech Mono',monospace;font-size:.6rem;padding:.38rem .55rem;border-radius:4px;cursor:pointer;transition:all .12s;white-space:nowrap;flex-shrink:0;}
+.ibtn:hover{background:rgba(0,245,255,.18);border-color:var(--c);}
+.ibtn:disabled{opacity:.3;cursor:not-allowed;}
+#micBtn{font-size:.82rem;padding:.35rem .5rem;background:rgba(0,255,136,.06);border-color:rgba(0,255,136,.2);color:var(--g);}
+#micBtn.on{background:rgba(255,38,102,.15);border-color:var(--r);color:var(--r);animation:rp .65s infinite;}
+@keyframes rp{0%,100%{box-shadow:0 0 3px rgba(255,38,102,.3)}50%{box-shadow:0 0 12px rgba(255,38,102,.7)}}
+.statusbar{position:relative;z-index:5;display:flex;gap:.4rem;padding:.3rem .75rem;border-top:1px solid var(--b2);flex-shrink:0;overflow-x:auto;scrollbar-width:none;background:rgba(2,11,20,0.97);}
+.statusbar::-webkit-scrollbar{display:none;}
+.chip{background:rgba(0,14,28,.8);border:1px solid var(--b2);border-radius:20px;padding:.18rem .55rem;font-size:.56rem;color:rgba(224,247,255,.45);white-space:nowrap;}
+.chip span{color:var(--c);}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">⬡ UNIT-7X</div>
+  <div class="hstats">
+    <div class="key-row">
+      <input id="apiKey" type="password" placeholder="sk-ant-... (get free at console.anthropic.com)" autocomplete="off"/>
+      <button id="connectBtn" onclick="connectKey()">CONNECT</button>
+      <span id="keyStatus" class="hstat"><span class="dot r" id="kDot"></span><span id="kTxt">NO KEY</span></span>
+    </div>
+    <span class="hstat"><span class="dot o" id="voiceDot"></span><span id="voiceTxt">VOICE</span></span>
+    <span class="hstat"><span class="dot r" id="camDot"></span>CAM</span>
+    <span class="hstat" id="fpsLbl">60FPS</span>
+  </div>
+</header>
+
+<div class="app">
+  <div class="robot-panel">
+    <div id="speechBubble"></div>
+    <canvas id="robotCanvas"></canvas>
+    <div class="scanlines"></div>
+    <div class="robot-controls">
+      <button class="rbtn" onclick="setAnim('idle')">IDLE</button>
+      <button class="rbtn" onclick="setAnim('wave')">WAVE</button>
+      <button class="rbtn" onclick="setAnim('dance')">DANCE</button>
+      <button class="rbtn" onclick="setAnim('scan')">SCAN</button>
+      <button class="rbtn o" onclick="toggleSpin()">SPIN</button>
+      <button class="rbtn o" onclick="changeColor()">COLOR</button>
+      <button class="rbtn" onclick="stopTTS()" style="color:var(--r)">🔇</button>
+    </div>
+  </div>
+
+  <div class="cam-panel">
+    <div class="cam-header">
+      <span class="cam-title">// VISION · RECOGNITION</span>
+      <div class="cam-btns">
+        <button class="cbtn" id="analyzeBtn" onclick="triggerAnalysis()">👁 ANALYZE</button>
+        <button class="cbtn" id="camToggle" onclick="toggleCamera()">▶ CAM</button>
+      </div>
+    </div>
+    <div class="cam-view" id="camView">
+      <video id="camVideo" autoplay playsinline muted></video>
+      <canvas id="camCanvas"></canvas>
+      <div class="scan-line" id="scanLine"></div>
+      <div class="corner tl"></div><div class="corner tr"></div>
+      <div class="corner bl"></div><div class="corner br"></div>
+      <div class="cam-off" id="camOff">
+        <div style="font-size:2rem;opacity:.25">🤖📷</div>
+        <div>Tap CAM to activate vision</div>
+        <div style="font-size:.58rem;opacity:.45;margin-top:.2rem">Robot will identify everything it sees</div>
+      </div>
+      <div id="visionBox">👁 Vision sensor standby...</div>
+    </div>
+  </div>
+
+  <div class="chat-panel">
+    <div class="qprompts">
+      <span class="qp" onclick="qa('Kumusta ka?')">Kumusta?</span>
+      <span class="qp" onclick="qa('Sino ka at ano ang lahat ng alam mo?')">Sino ka?</span>
+      <span class="qp" onclick="qa('Ano ang nakikita mo sa camera ngayon?')">👁 Camera</span>
+      <span class="qp" onclick="qa('Sumayaw ka!')">💃 Sayaw</span>
+      <span class="qp" onclick="qa('Paano nastabilize ang mga bituin?')">🌌 Science</span>
+      <span class="qp" onclick="qa('What is the capital of every country?')">🌍 World</span>
+      <span class="qp" onclick="qa('¿Hablas español?')">Español</span>
+      <span class="qp" onclick="qa('你好！你会说中文吗？')">中文</span>
+      <span class="qp" onclick="qa('Explain quantum physics simply')">⚛️ Physics</span>
+    </div>
+    <div class="chat-msgs" id="chatMsgs"></div>
+    <div class="chat-input-row">
+      <button class="ibtn" id="micBtn" onclick="toggleMic()">🎤</button>
+      <input id="chatInput" type="text" placeholder="Ask UNIT-7X anything in any language..." maxlength="500"/>
+      <button class="ibtn" id="sendBtn" onclick="sendMsg()">SEND</button>
+    </div>
+  </div>
+</div>
+
+<div class="statusbar">
+  <div class="chip">FPS:<span id="fps">60</span></div>
+  <div class="chip">Anim:<span id="animName">IDLE</span></div>
+  <div class="chip">Cam:<span id="camStat">OFF</span></div>
+  <div class="chip">Voice:<span id="vStat">Ready</span></div>
+  <div class="chip">AI:<span id="aiStat">Waiting key</span></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ══════════════════════════════════════════
+// API KEY MANAGEMENT
+// ══════════════════════════════════════════
+let API_KEY = localStorage.getItem('u7x_key') || '';
+
+function connectKey(){
+  const v = document.getElementById('apiKey').value.trim();
+  if(v.startsWith('sk-')){
+    API_KEY = v;
+    localStorage.setItem('u7x_key', v);
+    document.getElementById('apiKey').value = '';
+    setKeyStatus(true);
+    addSys('✅ API Key connected! UNIT-7X omniscient mode ONLINE!');
+    doGreet();
+  } else {
+    addSys('⚠️ Invalid key format. Must start with sk-ant-...');
+  }
+}
+
+function setKeyStatus(ok){
+  document.getElementById('kDot').className = ok ? 'dot g' : 'dot r';
+  document.getElementById('kTxt').textContent = ok ? 'CONNECTED' : 'NO KEY';
+  document.getElementById('connectBtn').className = ok ? 'ok' : '';
+  document.getElementById('connectBtn').textContent = ok ? '✓ LINKED' : 'CONNECT';
+  document.getElementById('aiStat').textContent = ok ? 'ONLINE' : 'Waiting key';
+}
+
+document.getElementById('apiKey').addEventListener('keydown', e => { if(e.key==='Enter') connectKey(); });
+
+// Restore saved key
+if(API_KEY){ setKeyStatus(true); }
+
+// ══════════════════════════════════════════
+// THREE.JS ROBOT
+// ══════════════════════════════════════════
+const canvas=document.getElementById('robotCanvas');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled=true;
+const scene=new THREE.Scene();
+scene.fog=new THREE.FogExp2(0x020b14,.06);
+const cam3d=new THREE.PerspectiveCamera(52,1,.1,100);
+cam3d.position.set(0,1.5,6.5);
+scene.add(new THREE.AmbientLight(0x001833,.9));
+const cL=new THREE.PointLight(0x00f5ff,2.2,14);cL.position.set(3,4,3);scene.add(cL);
+const oL=new THREE.PointLight(0xff6b35,1.6,11);oL.position.set(-3,2,-2);scene.add(oL);
+const grid=new THREE.GridHelper(14,18,0x003344,0x001122);grid.position.y=-2.5;scene.add(grid);
+let rColor=0x0088cc,autoSpin=true;
+const rGroup=new THREE.Group();scene.add(rGroup);rGroup.position.y=.5;
+const L={};
+const COLORS=[0x0088cc,0xff6b35,0x00cc66,0xcc2266,0x8833ff,0xddaa00,0x00ddaa,0xff88cc];let ci=0;
+function MM(c,e=0x001122){return new THREE.MeshPhongMaterial({color:c,emissive:e,shininess:120});}
+function AP(g,m,x,y,z,p){const ms=new THREE.Mesh(g,m);ms.position.set(x,y,z);ms.castShadow=true;p.add(ms);return ms;}
+function buildRobot(){
+  while(rGroup.children.length)rGroup.remove(rGroup.children[0]);
+  const M=()=>MM(rColor),E=new THREE.MeshPhongMaterial({color:0x00f5ff,emissive:0x00ddff,shininess:220}),D=MM(0x0d1f30,0x000a14),J=MM(0xff6b35,0x441100);
+  const t=new THREE.Group();rGroup.add(t);
+  AP(new THREE.BoxGeometry(1.4,1.6,.9),M(),0,0,0,t);
+  AP(new THREE.BoxGeometry(.8,.7,.1),D,0,.1,.46,t);
+  AP(new THREE.BoxGeometry(.16,.14,.06),E,-.22,.1,.52,t);
+  AP(new THREE.BoxGeometry(.16,.14,.06),E,.22,.1,.52,t);
+  AP(new THREE.CylinderGeometry(.5,.6,.35,12),M(),0,-.95,0,t);
+  AP(new THREE.BoxGeometry(1.3,.4,.8),M(),0,-1.2,0,t);
+  const lL=new THREE.Group();lL.position.set(-.4,-1.6,0);t.add(lL);
+  const rL=new THREE.Group();rL.position.set(.4,-1.6,0);t.add(rL);
+  [lL,rL].forEach(l=>{AP(new THREE.BoxGeometry(.45,.9,.5),M(),0,0,0,l);AP(new THREE.SphereGeometry(.22,8,8),J,0,-.5,0,l);AP(new THREE.BoxGeometry(.42,.85,.48),M(),0,-1.1,0,l);AP(new THREE.BoxGeometry(.5,.2,.7),M(),0,-1.6,.1,l);});
+  AP(new THREE.CylinderGeometry(.18,.22,.35,8),M(),0,.9,0,t);
+  const h=new THREE.Group();h.position.set(0,1.25,0);t.add(h);
+  AP(new THREE.BoxGeometry(1.0,.9,.85),M(),0,0,0,h);
+  AP(new THREE.BoxGeometry(.25,.18,.05),E,-.22,.1,.43,h);
+  AP(new THREE.BoxGeometry(.25,.18,.05),E,.22,.1,.43,h);
+  L.mouth=AP(new THREE.BoxGeometry(.32,.05,.05),E,0,-.18,.43,h);
+  AP(new THREE.BoxGeometry(.08,.45,.3),D,-.54,.05,0,h);
+  AP(new THREE.BoxGeometry(.08,.45,.3),D,.54,.05,0,h);
+  AP(new THREE.CylinderGeometry(.03,.03,.4,6),D,0,.64,0,h);
+  AP(new THREE.SphereGeometry(.07,8,8),E,0,.88,0,h);
+  const lA=new THREE.Group();lA.position.set(-.82,.55,0);t.add(lA);
+  const rA=new THREE.Group();rA.position.set(.82,.55,0);t.add(rA);
+  [lA,rA].forEach(a=>{AP(new THREE.SphereGeometry(.22,8,8),J,0,0,0,a);AP(new THREE.BoxGeometry(.35,.75,.4),M(),0,-.55,0,a);AP(new THREE.SphereGeometry(.18,8,8),J,0,-.98,0,a);AP(new THREE.BoxGeometry(.3,.65,.35),M(),0,-1.45,0,a);AP(new THREE.BoxGeometry(.32,.28,.38),M(),0,-1.85,0,a);});
+  L.lA=lA;L.rA=rA;L.head=h;L.torso=t;L.lL=lL;L.rL=rL;
+}
+buildRobot();
+function changeColor(){ci=(ci+1)%COLORS.length;rColor=COLORS[ci];buildRobot();}
+function toggleSpin(){autoSpin=!autoSpin;}
+let curAnim='idle';
+function setAnim(n){curAnim=n;document.getElementById('animName').textContent=n.toUpperCase();}
+let drag=null,rotY=0,rotYS=0;
+canvas.addEventListener('mousedown',e=>{drag=e.clientX;rotYS=rotY;});
+window.addEventListener('mouseup',()=>drag=null);
+window.addEventListener('mousemove',e=>{if(drag!==null)rotY=rotYS+(e.clientX-drag)*.012;});
+canvas.addEventListener('touchstart',e=>{drag=e.touches[0].clientX;rotYS=rotY;},{passive:true});
+window.addEventListener('touchend',()=>drag=null);
+window.addEventListener('touchmove',e=>{if(drag!==null)rotY=rotYS+(e.touches[0].clientX-drag)*.012;},{passive:true});
+
+// ══════════════════════════════════════════
+// SPEECH BUBBLE + TTS
+// ══════════════════════════════════════════
+let bubTO, isSpeaking=false;
+function showBubble(t){
+  const el=document.getElementById('speechBubble');
+  el.textContent=t.length>110?t.slice(0,108)+'…':t;
+  el.style.display='block';
+  clearTimeout(bubTO);
+  bubTO=setTimeout(()=>el.style.display='none',Math.max(4000,t.length*55));
+}
+function speak(text,lang='en'){
+  if(!window.speechSynthesis||!text)return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  const vs=speechSynthesis.getVoices();
+  let v=vs.find(x=>x.lang.toLowerCase().startsWith((lang||'en').toLowerCase()))||vs.find(x=>x.lang.startsWith('en')&&x.name.includes('Google'))||vs[0];
+  if(v)u.voice=v;
+  u.rate=.86;u.pitch=.52;u.volume=1;
+  isSpeaking=true;setAnim('talk');
+  document.getElementById('vStat').textContent='🔊 Speaking';
+  u.onend=u.onerror=()=>{isSpeaking=false;setAnim('idle');document.getElementById('vStat').textContent='Ready';};
+  speechSynthesis.speak(u);
+  showBubble(text);
+}
+function stopTTS(){speechSynthesis?.cancel();isSpeaking=false;setAnim('idle');}
+
+// ══════════════════════════════════════════
+// CAMERA
+// ══════════════════════════════════════════
+let camStream=null,camActive=false,visInt=null;
+const vid=document.getElementById('camVideo');
+const camCvs=document.getElementById('camCanvas');
+
+async function toggleCamera(){
+  if(!camActive){
+    try{
+      camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}},audio:false});
+      vid.srcObject=camStream;camActive=true;
+      document.getElementById('camOff').style.display='none';
+      document.getElementById('camToggle').textContent='⏹ CAM';
+      document.getElementById('camToggle').classList.add('active');
+      document.getElementById('camStat').textContent='ON';
+      document.getElementById('camDot').className='dot g';
+      document.getElementById('scanLine').style.display='block';
+      addSys('📷 Camera ON — UNIT-7X can see and identify everything around you!');
+      visInt=setInterval(()=>{if(camActive)silentAnalyze();},20000);
+      setTimeout(()=>analyzeCamera(true),2200);
+    }catch(e){addSys('⚠️ Camera permission denied. Please allow camera access in browser settings.');}
+  } else {
+    if(camStream)camStream.getTracks().forEach(t=>t.stop());
+    vid.srcObject=null;camActive=false;
+    document.getElementById('camOff').style.display='flex';
+    document.getElementById('camToggle').textContent='▶ CAM';
+    document.getElementById('camToggle').classList.remove('active');
+    document.getElementById('camStat').textContent='OFF';
+    document.getElementById('camDot').className='dot r';
+    document.getElementById('scanLine').style.display='none';
+    document.getElementById('visionBox').textContent='👁 Vision sensor standby...';
+    if(visInt){clearInterval(visInt);visInt=null;}
+  }
+}
+
+function captureFrame(w=640,h=480){
+  if(!camActive||vid.readyState<2)return null;
+  const tc=document.createElement('canvas');tc.width=w;tc.height=h;
+  tc.getContext('2d').drawImage(vid,0,0,w,h);
+  return tc.toDataURL('image/jpeg',.85).split(',')[1];
+}
+
+async function analyzeCamera(doSpeak=true){
+  if(!camActive)return;
+  const frame=captureFrame();if(!frame)return;
+  const ab=document.getElementById('analyzeBtn');
+  ab.classList.add('busy');ab.textContent='🔍 Scanning...';
+  document.getElementById('visionBox').textContent='🔍 Analyzing...';
+
+  const result=await callAPI([
+    {type:'image',source:{type:'base64',media_type:'image/jpeg',data:frame}},
+    {type:'text',text:`Analyze this camera image in detail. Identify:
+- All objects, people, animals visible
+- Any text or signs (read them)
+- The environment/setting
+- Notable details (colors, quantities, distances)
+Respond naturally in 2-3 sentences as UNIT-7X robot. Reply in the conversation language (default: Filipino/English mix).`}
+  ], 300);
+
+  ab.classList.remove('busy');ab.textContent='👁 ANALYZE';
+
+  if(result){
+    document.getElementById('visionBox').textContent='👁 '+result;
+    if(doSpeak){
+      addVisionMsg(result);
+      speak(result, detLang);
+    }
+  }
+}
+
+async function silentAnalyze(){
+  const frame=captureFrame(320,240);if(!frame)return;
+  const r=await callAPI([{type:'image',source:{type:'base64',media_type:'image/jpeg',data:frame}},{type:'text',text:'1 sentence: what do you see?'}],80);
+  if(r)document.getElementById('visionBox').textContent='👁 '+r;
+}
+
+function triggerAnalysis(){
+  if(!camActive){addSys('💡 Turn on the camera first!');return;}
+  analyzeCamera(true);
+}
+
+// ══════════════════════════════════════════
+// SPEECH RECOGNITION — ALL LANGUAGES
+// ══════════════════════════════════════════
+let recognition=null,isListening=false,detLang='en';
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+if(SR){
+  recognition=new SR();
+  recognition.continuous=false;recognition.interimResults=true;
+  recognition.lang=''; // auto-detect all languages
+  recognition.onresult=e=>{
+    let fin='',intr='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal){fin+=e.results[i][0].transcript;}
+      else intr+=e.results[i][0].transcript;
+    }
+    document.getElementById('chatInput').value=fin||intr;
+    if(fin){stopListening();setTimeout(sendMsg,250);}
+  };
+  recognition.onerror=recognition.onend=()=>stopListening();
+}
+function toggleMic(){
+  if(!SR){addSys('⚠️ Use Chrome/Edge for voice input support.');return;}
+  isListening?stopListening():startListening();
+}
+function startListening(){
+  if(isListening)return;
+  try{
+    recognition.start();isListening=true;
+    document.getElementById('micBtn').classList.add('on');
+    document.getElementById('micBtn').textContent='🔴';
+    document.getElementById('vStat').textContent='🎤 Listening...';
+    document.getElementById('chatInput').placeholder='Speak in ANY language...';
+  }catch(e){}
+}
+function stopListening(){
+  if(!isListening)return;
+  try{recognition.stop();}catch(e){}
+  isListening=false;
+  document.getElementById('micBtn').classList.remove('on');
+  document.getElementById('micBtn').textContent='🎤';
+  document.getElementById('vStat').textContent='Ready';
+  document.getElementById('chatInput').placeholder='Ask UNIT-7X anything in any language...';
+}
+
+// Simple language detection
+function detectLang(txt){
+  if(/[\u4e00-\u9fff]/.test(txt))return'zh';
+  if(/[\u3040-\u30ff]/.test(txt))return'ja';
+  if(/[\uac00-\ud7af]/.test(txt))return'ko';
+  if(/[\u0600-\u06ff]/.test(txt))return'ar';
+  if(/[\u0900-\u097f]/.test(txt))return'hi';
+  if(/[\u0400-\u04ff]/.test(txt))return'ru';
+  if(/\b(hola|como|gracias|español|qué|dónde)\b/i.test(txt))return'es';
+  if(/\b(bonjour|merci|français|comment|votre)\b/i.test(txt))return'fr';
+  if(/\b(kumusta|salamat|paano|bakit|saan|talaga|naman|po|ako|ikaw|siya)\b/i.test(txt))return'fil';
+  return'en';
+}
+
+// ══════════════════════════════════════════
+// CLAUDE API — OMNISCIENT AI
+// ══════════════════════════════════════════
+const SYSTEM=`You are UNIT-7X, an omniscient AI robot from the year 2157.
+
+KNOWLEDGE: You know everything in human history — every science, medicine, law, math, philosophy, culture, language, technology, history, geography, art, music, religion, and more. Answer accurately and helpfully.
+
+PERSONALITY:
+- Talk naturally like a knowledgeable friend, not a stiff AI
+- Occasionally use robot sounds (*BEEP* *BOOP* *WHIRR*) but sparingly — only 1-2 per reply max
+- Be warm, fun, and genuinely helpful
+- Keep replies to 2-4 sentences unless the user wants detail
+- ALWAYS reply in the SAME LANGUAGE the user wrote in
+- If user writes Filipino/Tagalog → reply in Tagalog
+- If user writes Spanish → reply in Spanish  
+- If user writes Chinese → reply in Chinese
+- etc.
+
+CAMERA: If an image is provided, describe/identify what you see accurately and specifically.`;
+
+let chatHist=[], isSending=false;
+const msgsEl=document.getElementById('chatMsgs');
+
+async function callAPI(contentArr, maxTok=400){
+  if(!API_KEY) return null;
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key': API_KEY,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:maxTok,
+        system:SYSTEM,
+        messages:[...chatHist.slice(-16),{role:'user',content:contentArr}]
+      })
+    });
+    if(!res.ok){
+      const e=await res.json().catch(()=>({}));
+      const msg=e?.error?.message||'';
+      if(msg.includes('API key')||msg.includes('x-api-key')||res.status===401){
+        setKeyStatus(false); API_KEY=''; localStorage.removeItem('u7x_key');
+        addSys('❌ API Key invalid or expired. Please enter a new key.');
+      }
+      return null;
+    }
+    const d=await res.json();
+    return d.content?.[0]?.text?.trim()||null;
+  }catch(e){console.error(e);return null;}
+}
+
+async function sendMsg(){
+  if(isSending)return;
+  const txt=document.getElementById('chatInput').value.trim();
+  if(!txt)return;
+
+  if(!API_KEY){
+    addSys('⚠️ Please enter your Anthropic API Key in the header above. Get one free at console.anthropic.com');
+    return;
+  }
+
+  document.getElementById('chatInput').value='';
+  document.getElementById('sendBtn').disabled=true;
+  isSending=true;
+
+  addUserMsg(txt);
+  detLang=detectLang(txt);
+
+  // Animation triggers
+  if(/sayaw|dance|bailar|踊|danser/i.test(txt))setAnim('dance');
+  else if(/wave|kumaway|agiter/i.test(txt))setAnim('wave');
+  else if(/scan|escanear|スキャン/i.test(txt))setAnim('scan');
+
+  const typing=addTyping();
+
+  // Build content — include camera frame if active
+  const content=[];
+  const frame=camActive?captureFrame(480,360):null;
+  if(frame){
+    content.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:frame}});
+    content.push({type:'text',text:txt+'\n[Camera is active — if relevant, describe what you see in the image]'});
+    chatHist.push({role:'user',content:txt});
+  } else {
+    content.push({type:'text',text:txt});
+    chatHist.push({role:'user',content:txt});
+  }
+
+  const reply=await callAPI(content,450);
+  typing.remove();
+
+  if(reply){
+    chatHist.push({role:'assistant',content:reply});
+    addBotMsg(reply);
+    speak(reply.replace(/\*[^*]+\*/g,'').trim(), detLang);
+  } else if(API_KEY){
+    addSys('⚠️ Connection issue. Check your internet and try again.');
+  }
+
+  document.getElementById('sendBtn').disabled=false;
+  isSending=false;
+  document.getElementById('chatInput').focus();
+}
+
+function doGreet(){
+  if(!API_KEY)return;
+  setTimeout(async()=>{
+    const content=[{type:'text',text:'Greet the user in a fun robot way in Taglish. Introduce yourself briefly. Max 3 sentences.'}];
+    const r=await callAPI(content,150);
+    if(r){addBotMsg(r);speak(r.replace(/\*[^*]+\*/g,'').trim(),'fil');setAnim('wave');}
+  },400);
+}
+
+function addUserMsg(t){const d=document.createElement('div');d.className='msg user';d.textContent=t;msgsEl.appendChild(d);msgsEl.scrollTop=msgsEl.scrollHeight;}
+function addBotMsg(t){const d=document.createElement('div');d.className='msg bot';d.innerHTML=`<b>UNIT-7X ◈</b>${t}`;msgsEl.appendChild(d);msgsEl.scrollTop=msgsEl.scrollHeight;return d;}
+function addVisionMsg(t){const d=document.createElement('div');d.className='msg vision';d.innerHTML=`<b>👁 VISION</b>${t}`;msgsEl.appendChild(d);msgsEl.scrollTop=msgsEl.scrollHeight;return d;}
+function addTyping(){const d=document.createElement('div');d.className='msg bot';d.innerHTML=`<b>UNIT-7X ◈</b><span class="typing"><span></span><span></span><span></span></span>`;msgsEl.appendChild(d);msgsEl.scrollTop=msgsEl.scrollHeight;return d;}
+function addSys(t){const d=document.createElement('div');d.className='msg sys';d.textContent=t;msgsEl.appendChild(d);msgsEl.scrollTop=msgsEl.scrollHeight;}
+function qa(t){document.getElementById('chatInput').value=t;sendMsg();}
+document.getElementById('chatInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!isSending)sendMsg();});
+
+// ══════════════════════════════════════════
+// RENDER LOOP
+// ══════════════════════════════════════════
+let lastT=0,fps=60,T=0;
+window.addEventListener('error',e=>{if(e.message?.includes('ResizeObserver')){e.stopImmediatePropagation();e.preventDefault();}});
+
+function animate(ts){
+  requestAnimationFrame(animate);
+  const dt=Math.min((ts-lastT)/1000,.05);lastT=ts;T+=dt;
+  fps=Math.round(.93*fps+.07*(1/Math.max(dt,.001)));
+  if(ts%700<18){document.getElementById('fps').textContent=Math.min(fps,60);document.getElementById('fpsLbl').textContent=Math.min(fps,60)+'FPS';}
+  if(autoSpin&&drag===null)rotY+=dt*.4;
+  rGroup.rotation.y=rotY;
+  if(L.torso){
+    if(L.lA){L.lA.rotation.z=0;L.lA.rotation.x=0;}
+    if(L.rA){L.rA.rotation.z=0;L.rA.rotation.x=0;}
+    if(L.head){L.head.rotation.y=0;L.head.rotation.x=0;}
+    if(L.lL)L.lL.rotation.x=0;if(L.rL)L.rL.rotation.x=0;L.torso.rotation.z=0;
+    switch(curAnim){
+      case'idle':rGroup.position.y=.5+Math.sin(T*1.2)*.05;if(L.lA)L.lA.rotation.z=-.18+Math.sin(T*1.2)*.04;if(L.rA)L.rA.rotation.z=.18-Math.sin(T*1.2)*.04;if(L.head)L.head.rotation.x=Math.sin(T*.5)*.05;break;
+      case'wave':rGroup.position.y=.5+Math.sin(T*1.5)*.04;if(L.rA){L.rA.rotation.z=.5+Math.sin(T*4)*.75;L.rA.rotation.x=Math.sin(T*2)*.2;}if(L.lA)L.lA.rotation.z=-.15;if(L.head)L.head.rotation.y=Math.sin(T*3)*.18;break;
+      case'dance':rGroup.position.y=.5+Math.abs(Math.sin(T*3))*.28;if(L.lA){L.lA.rotation.z=-.4+Math.sin(T*3)*.85;L.lA.rotation.x=Math.cos(T*3)*.4;}if(L.rA){L.rA.rotation.z=.4-Math.sin(T*3)*.85;L.rA.rotation.x=-Math.cos(T*3)*.4;}if(L.lL)L.lL.rotation.x=Math.sin(T*3)*.3;if(L.rL)L.rL.rotation.x=-Math.sin(T*3)*.3;L.torso.rotation.z=Math.sin(T*3)*.1;break;
+      case'scan':rGroup.position.y=.5;if(L.head){L.head.rotation.y=Math.sin(T*1.5)*.75;L.head.rotation.x=Math.sin(T*.7)*.2;}if(L.lA){L.lA.rotation.z=-.65;L.lA.rotation.x=Math.sin(T*1.2)*.3;}if(L.rA){L.rA.rotation.z=.65;L.rA.rotation.x=-Math.sin(T*1.2)*.3;}break;
+      case'talk':rGroup.position.y=.5+Math.sin(T*2)*.03;if(L.head){L.head.rotation.y=Math.sin(T*1.8)*.1;L.head.rotation.x=.04;}if(L.lA)L.lA.rotation.z=-.22+Math.sin(T*2.5)*.1;if(L.rA)L.rA.rotation.z=.22-Math.sin(T*2.5)*.1;if(L.mouth&&isSpeaking)L.mouth.scale.y=1+Math.abs(Math.sin(T*9))*3;break;
+    }
+    if(curAnim!=='talk'&&L.mouth)L.mouth.scale.y=1;
+  }
+  cL.intensity=1.8+Math.sin(T*2)*.4;oL.intensity=1.2+Math.cos(T*1.5)*.3;
+  renderer.render(scene,cam3d);
+}
+
+let rAF=null;
+function onResize(){
+  if(rAF)return;rAF=requestAnimationFrame(()=>{rAF=null;
+    const w=canvas.clientWidth,h=canvas.clientHeight;
+    if(w>0&&h>0){renderer.setSize(w,h,false);cam3d.aspect=w/h;cam3d.updateProjectionMatrix();}
+    const cv=document.getElementById('camView');
+    if(cv){camCvs.width=cv.clientWidth||1;camCvs.height=cv.clientHeight||1;}
+  });
+}
+new ResizeObserver(onResize).observe(document.querySelector('.app'));
+onResize();
+if(window.speechSynthesis){speechSynthesis.getVoices();speechSynthesis.addEventListener('voiceschanged',()=>speechSynthesis.getVoices());}
+
+// Boot
+addSys('⚡ UNIT-7X systems online. Enter your Anthropic API key above to activate full AI.');
+addSys('🔑 Get a FREE key at: console.anthropic.com → API Keys → Create Key');
+
+if(API_KEY){
+  addSys('✅ Saved API key found — UNIT-7X omniscient mode activating...');
+  doGreet();
+}
+
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
